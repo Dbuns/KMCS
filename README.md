@@ -155,7 +155,7 @@ The material-pair energies are defined by [`E_vals`](KMCS.py#L1827-L1831):
 ], dtype=np.float32)
 ```
 
-For material IDs starting at `1`, `E_vals[i - 1, j - 1]` is the material-pair contribution to the hopping activation energy of an atom of material `i` when it has a neighboring atom of material `j`.
+For material IDs starting at `1`, `E_vals[i, j]` is the material-pair contribution to the hopping activation energy of an atom of material `i` when it has a neighboring atom of material `j`.
 
 The total neighboring contribution `EN` is calculated by summing these values over the occupied nearest-neighbor positions.
 
@@ -168,7 +168,6 @@ When adding a material, make sure that:
 - `E_vals` contains all required material-pair values
 - The lattice height is sufficient for the intended film thickness
 - A plotting color is defined if the material will be visualized
-- Placeholder energies are replaced before drawing physical conclusions
 
 ## Design of Experiments
 
@@ -290,19 +289,19 @@ The repository includes a small saved simulation state in `examples/`, allowing 
 
 ### Single-material growth
 
-![Single-material growth](figures/snapshot_single.png)
+<img src="figures/snapshot_single.png" alt="Single-material growth" width="500">
 
 ### Two-material growth
 
-![Two-material growth](figures/snapshot_2mat.png)
+<img src="figures/snapshot_2mat.png" alt="Two-material growth" width="500">
 
 ### Three-dimensional two-material morphology
 
-![Three-dimensional two-material morphology](figures/snapshot_2mat_3d.png)
+<img src="figures/snapshot_2mat_3d.png" alt="Three-dimensional two-material morphology" width="500">
 
 ### Three-material growth
 
-![Three-material growth](figures/snapshot_3mat.png)
+<img src="figures/snapshot_3mat.png" alt="Three-material growth" width="500">
 
 ## Validation against the published model
 
@@ -320,7 +319,7 @@ Temperature and deposition-frequency sweeps were used to validate the model agai
 
 The Python implementation reproduces these behaviors under the corresponding model parameters.
 
-![Published trends and DOE extension](figures/number_density.png)
+<img src="figures/number_density.png" alt="Published trends and DOE extension" width="500">
 
 The original paper used one-variable-at-a-time comparisons to explain the experimental trends. The DOE implementation included here expands the analysis by resolving temperature and frequency simultaneously and fitting a continuous response surface to the simulated pillar-density results.
 
