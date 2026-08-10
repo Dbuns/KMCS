@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pstats
+
+# VS Code
+.vscode/
+
+# Virtual environments
+venv/
+.env/
+
+# Simulation outputs
+frames/
+runs/
+*.png
+*.gif
+*.mp4
+
+# Logs / temp
+*.log
+*.tmp
+
+# References
+*.pdf
+*.txt
+*.npz
+*.csv
+
+# Local analysis workbooks
+*.xls
+*.xlsx
+
+# Operating system metadata
+.DS_Store
+Thumbs.db
+
+# Curated public assets
+!requirements.txt
+!examples/
+!examples/run_info.txt
+!examples/snapshot_final.npz
+!examples/topview.png
+!figures/
+!figures/*.png
