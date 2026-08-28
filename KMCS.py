@@ -1,6 +1,6 @@
 """
-KMCS_new.py
-===========
+KMCS.py
+-------
 
 Kinetic Monte Carlo model for pulsed thin-film growth on a stepped substrate.
 The code deposits atoms pulse-by-pulse, then relaxes only the atoms deposited
@@ -25,7 +25,7 @@ Quick start
       RUN_TYPE = "single"   # one run using DEP exactly as written
       RUN_TYPE = "doe"      # batch over DOE_T_C and DOE_F_HZ
 2. Run:
-      python KMCS_new.py
+      python KMCS.py
 3. Outputs are written to:
       runs/<timestamp>_<label>/
 4. Useful files to inspect:
@@ -118,6 +118,10 @@ from pathlib import Path
 from datetime import datetime
 from PIL import Image
 import csv
+import platform
+
+__version__ = "1.0.0"
+RNG_ALGORITHM = "PCG64"
 
 # ============================================================
 # Constants, state arrays, conventions
@@ -183,9 +187,17 @@ def save_run_info(run_dir, params_dict):
     summary = params_dict.get("summary", {})
     notes = params_dict.get("notes", "")
     seed = params_dict.get("seed")
+    software = params_dict.get("software", {})
 
     lines = [
         f"Run timestamp: {params_dict.get('timestamp', '')}",
+        "",
+        "Software:",
+        f"name = {software.get('name', 'KMCS')}",
+        f"version = {software.get('version', '')}",
+        f"Python = {software.get('python_version', '')}",
+        f"NumPy = {software.get('numpy_version', '')}",
+        f"random generator = {software.get('rng_algorithm', '')}",
         "",
         "Grid:",
         f"Lx = {grid.get('Lx', '')}",
@@ -1841,10 +1853,15 @@ def frequency_label(frequency_hz):
     return f"{float(frequency_hz):g}".replace(".", "p")
 
 
+def make_rng(seed):
+    """Return the explicitly versioned random generator used by KMCS."""
+    return np.random.Generator(np.random.PCG64(int(seed)))
+
+
 def run_kmcs_case(config, DEP_run, run_label=None, run_note=None, case_metadata=None):
     """Run one KMCS case using the supplied DEP matrix."""
     seed = int(config["seed"])
-    rng = np.random.default_rng(seed)
+    rng = make_rng(seed)
     Lx, Ly, Lz = int(config["Lx"]), int(config["Ly"]), int(config["Lz"])
     W = int(config["W"])
     plot_every = int(config["plot_every"])
@@ -1886,6 +1903,13 @@ def run_kmcs_case(config, DEP_run, run_label=None, run_note=None, case_metadata=
 
     run_params = {
         "timestamp": run_timestamp if run_timestamp is not None else datetime.now().strftime("%Y-%m-%d_%H-%M-%S"),
+        "software": {
+            "name": "KMCS",
+            "version": __version__,
+            "python_version": platform.python_version(),
+            "numpy_version": np.__version__,
+            "rng_algorithm": RNG_ALGORITHM,
+        },
         "grid": {"Lx": Lx, "Ly": Ly, "Lz": Lz},
         "DEP": DEP_run,
         "E_vals": config["E_vals"],

@@ -1,0 +1,5 @@
+# Exact package versions used for the v1.0.0 release checks with Python 3.11.14.
+matplotlib==3.8.0
+numpy==1.26.4
+pandas==2.1.4
+Pillow==12.0.0

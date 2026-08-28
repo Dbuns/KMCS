@@ -38,6 +38,7 @@ Thumbs.db
 
 # Curated public assets
 !requirements.txt
+!requirements-tested.txt
 !examples/
 !examples/run_info.txt
 !examples/snapshot_final.npz

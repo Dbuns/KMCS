@@ -1,4 +1,4 @@
-matplotlib
-numpy
-pandas
-Pillow
+matplotlib>=3.8,<4
+numpy>=1.26,<3
+pandas>=2.1,<3
+Pillow>=10,<13

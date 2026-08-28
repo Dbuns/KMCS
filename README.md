@@ -55,6 +55,8 @@ The model uses periodic lateral boundaries, cubic and diagonal hopping direction
 
 ## Installation
 
+KMCS requires Python 3.10 or newer.
+
 Clone the repository and enter its directory:
 
 ```bash
@@ -86,9 +88,13 @@ Install the required packages:
 python -m pip install -r requirements.txt
 ```
 
+The version ranges in `requirements.txt` are intended for normal installation.
+For exact reproduction of the environment used for the v1.0.0 release checks,
+install `requirements-tested.txt` instead.
+
 ## Quick start
 
-The main simulation settings are collected in [`default_run_config()`](KMCS.py#L1806-L1835) near the bottom of `KMCS.py`.
+The main simulation settings are collected in [`default_run_config()`](KMCS.py#L1818-L1852) near the bottom of `KMCS.py`.
 
 For a first run, keep:
 
@@ -112,7 +118,7 @@ A full scientific-scale simulation can require substantial computation time. For
 
 ## Configuring a simulation
 
-The main settings begin in the [configuration block](KMCS.py#L1806-L1835):
+The main settings begin in the [configuration block](KMCS.py#L1818-L1852):
 
 ```python
 "RUN_TYPE": "single",
@@ -123,7 +129,7 @@ The main settings begin in the [configuration block](KMCS.py#L1806-L1835):
 "W": 1,
 ```
 
-The deposition schedule is defined by [`DEP`](KMCS.py#L1825-L1826):
+The deposition schedule is defined by [`DEP`](KMCS.py#L1838):
 
 ```python
 "DEP": np.array([
@@ -144,7 +150,7 @@ Additional materials can be introduced by adding more `species, ratio` pairs and
 
 ## Interaction-energy matrix
 
-The material-pair energies are defined by [`E_vals`](KMCS.py#L1827-L1831):
+The material-pair energies are defined by [`E_vals`](KMCS.py#L1840-L1844):
 
 ```python
 "E_vals": np.array([
@@ -192,7 +198,11 @@ Each condition receives its own run folder, and a summary is written to:
 runs/doe_summary.csv
 ```
 
-After the simulated morphologies have been analyzed for pillar density, `DOE_plot.py` can be used to fit the quadratic response surface:
+The repository also includes `DOE_plot.py`, the script used for the specific
+temperature-frequency dataset presented here. Its density table is written
+directly into the script. It combines the data used to check the trends from
+the paper with the expanded DOE analysis and fits the quadratic response
+surface:
 
 ```text
 y = b0 + b1*x1 + b2*x2 + b3*x1*x2 + b4*x1^2 + b5*x2^2
@@ -205,6 +215,11 @@ python DOE_plot.py
 ```
 
 The script prints the fitted coefficients and coefficient of determination and generates a DOE contour plot with one-variable-at-a-time slices.
+
+Unlike `analyze_npz_3d.py` and `analyze_pillar_density.py`, `DOE_plot.py` does
+not automatically read arbitrary KMCS output. Its embedded table can be edited
+for another dataset, but it is included primarily to document and reproduce
+this particular analysis rather than as a general-purpose analysis tool.
 
 The OVAT slices provide a direct comparison with the temperature and deposition-frequency trends investigated in the original publication. The DOE surface extends that analysis by showing the combined response across the parameter space.
 
@@ -223,6 +238,10 @@ Each simulation creates a timestamped run directory containing some or all of th
 The roughness output is available in the implementation but has not yet been validated as part of the published scientific workflow. It should therefore be treated as an experimental analysis output.
 
 The random seed is stored with every run. Repeating a simulation with the same code, seed, and parameters gives the same stochastic event sequence.
+
+The v1.0.0 release explicitly uses NumPy's PCG64 random-number generator. The
+KMCS version, Python version, NumPy version, and generator name are recorded in
+`run_info.txt` so that the software environment behind a run is easier to trace.
 
 ## Analysis tools
 
@@ -341,10 +360,53 @@ Material 4 is included only as a demonstration of the extended multi-material fu
 
 Results should therefore be interpreted as model predictions under a defined set of assumptions and parameters.
 
+## Testing
+
+`tests/test_kmcs.py` is a small safety check for the software. It runs in a few
+seconds and does not perform or validate a full scientific simulation. It
+checks that the input table is interpreted correctly, the starting substrate
+is constructed consistently, identical seeds give identical deposition, a
+top-view image can be produced, and the included example file can be opened by
+the analysis tools. This helps catch accidental breakage when the code is
+changed later.
+
+Run them with:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+## Development history and contributors
+
+KMCS developed through an earlier C++ implementation by Bouwe Kuiper, a MATLAB
+implementation by Chris Vos, and the present Python adaptation and extensions
+by Daniel M. Cunha. The full history, including the use of AI assistance during
+the Python port and release preparation, is recorded in
+[`CONTRIBUTORS.md`](CONTRIBUTORS.md).
+
+## Citation
+
+Machine-readable citation metadata for the software is provided in
+[`CITATION.cff`](CITATION.cff). A DOI for the software release will be added
+after archival publication through 4TU.ResearchData.
+
+Until then, please also cite the related scientific publication listed at the
+beginning of this README when the original model or its validation is relevant.
+
+## License
+
+KMCS is released under the [Apache License 2.0](LICENSE).
+
 ## Acknowledgment
 
-The original scientific model and MATLAB implementation were developed as part of the research reported in the publication above.
+The software grew from Bouwe Kuiper's earlier C++ implementation and Chris
+Vos's MATLAB implementation. The MATLAB version was used in the research
+reported in the publication above, and Daniel M. Cunha developed and validated
+the present Python adaptation and its extensions.
 
-The translation to Python, extension of the workflow, documentation, and repository preparation were carried out with assistance from ChatGPT by OpenAI. The scientific decisions, model parameters, validation, and interpretation remain the responsibility of the author.
+The Python port, optimization, documentation, and repository preparation were
+carried out with substantial assistance from ChatGPT by OpenAI. The scientific
+model, parameter choices, validation, interpretation, and release decisions
+remain the responsibility of the human authors.
 
 One of the main goals of this port is to make the model easier to access, inspect, reproduce, and extend beyond the original research project.

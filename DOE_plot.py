@@ -2,14 +2,21 @@
 """
 Created on Wed Apr 29 13:47:09 2026
 
-@author: MonteiroCunhaD1
+Author: Daniel M. Cunha
+
+Case-specific analysis script for the temperature-frequency dataset used to
+check the published trends and extend them with a quadratic response surface.
+The data table is embedded below. This script does not automatically read new
+KMCS runs; replace the table manually if adapting it to another dataset.
 """
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Data transcribed from your table
+# Fixed validation and DOE dataset for the case presented in this repository.
+# This may be edited manually for another case, but the script is not currently
+# intended as a general-purpose data-import tool.
 data = [
     # frequency, temperature, density
     (0.5, 600, 0.111958),

@@ -1,0 +1,55 @@
+cff-version: 1.2.0
+message: >-
+  If you use KMCS, please cite this software release and the related
+  scientific publication listed in this file.
+title: "KMCS: Kinetic Monte Carlo Simulation of Multi-Material Thin-Film Growth"
+type: software
+version: 1.0.0
+date-released: 2026-08-28
+authors:
+  - family-names: Cunha
+    given-names: Daniel Monteiro
+    orcid: "https://orcid.org/0000-0002-8217-2580"
+    affiliation: University of Twente
+  - family-names: Vos
+    given-names: Chris
+    affiliation: University of Twente
+  - family-names: Kuiper
+    given-names: Bouwe
+    affiliation: University of Twente
+repository-code: "https://github.com/Dbuns/KMCS"
+url: "https://github.com/Dbuns/KMCS"
+license: Apache-2.0
+abstract: >-
+  KMCS is a lattice-based kinetic Monte Carlo model for pulsed thin-film
+  growth. It supports single- and multi-material simulations, successive
+  deposited layers, automated temperature-frequency studies, pillar-density
+  analysis, and two- and three-dimensional visualization.
+keywords:
+  - kinetic Monte Carlo
+  - thin-film growth
+  - pulsed laser deposition
+  - vertically aligned nanocomposites
+  - multi-material simulation
+  - design of experiments
+references:
+  - type: article
+    authors:
+      - family-names: Cunha
+        given-names: Daniel M.
+      - family-names: Vos
+        given-names: Chris M.
+      - family-names: Hendriks
+        given-names: T. A.
+      - family-names: Singh
+        given-names: D. P.
+      - family-names: Huijben
+        given-names: Mark
+    title: "Morphology Evolution during Lithium-Based Vertically Aligned Nanocomposite Growth"
+    journal: ACS Applied Materials & Interfaces
+    year: 2019
+    volume: 11
+    issue: 47
+    start: 44444
+    end: 44450
+    doi: "10.1021/acsami.9b15025"
