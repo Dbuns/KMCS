@@ -1,5 +1,7 @@
 # KMCS - Kinetic Monte Carlo Simulation of Multi-Material Thin-Film Growth
 
+[![DOI](https://img.shields.io/badge/DOI-10.4121%2Fa4fe04ef--aa27--42b7--9f84--81e8313903d8.v1-blue)](https://doi.org/10.4121/a4fe04ef-aa27-42b7-9f84-81e8313903d8.v1)
+
 KMCS is a lattice-based kinetic Monte Carlo model for simulating pulsed thin-film growth, with a particular focus on vertically aligned nanocomposites (VANs). The model can also be used to study the growth of individual materials.
 
 This Python implementation is an adaptation of the MATLAB code used in our publication:
@@ -387,10 +389,19 @@ the Python port and release preparation, is recorded in
 ## Citation
 
 Machine-readable citation metadata for the software is provided in
-[`CITATION.cff`](CITATION.cff). A DOI for the software release will be added
-after archival publication through 4TU.ResearchData.
+[`CITATION.cff`](CITATION.cff).
 
-Until then, please also cite the related scientific publication listed at the
+To cite this specific release, use the archived v1.0.0 record:
+
+> D. Monteiro Cunha, C. Vos, and B. Kuiper, "KMCS v1.0.0: Software underlying
+> the publication 'Morphology Evolution during Lithium-Based Vertically
+> Aligned Nanocomposite Growth'," 4TU.ResearchData, 2026.
+> [https://doi.org/10.4121/a4fe04ef-aa27-42b7-9f84-81e8313903d8.v1](https://doi.org/10.4121/a4fe04ef-aa27-42b7-9f84-81e8313903d8.v1)
+
+The DOI without the `.v1` suffix resolves to the latest available version:
+[https://doi.org/10.4121/a4fe04ef-aa27-42b7-9f84-81e8313903d8](https://doi.org/10.4121/a4fe04ef-aa27-42b7-9f84-81e8313903d8).
+
+Please also cite the related scientific publication listed at the
 beginning of this README when the original model or its validation is relevant.
 
 ## License

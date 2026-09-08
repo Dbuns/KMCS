@@ -2,10 +2,13 @@ cff-version: 1.2.0
 message: >-
   If you use KMCS, please cite this software release and the related
   scientific publication listed in this file.
-title: "KMCS: Kinetic Monte Carlo Simulation of Multi-Material Thin-Film Growth"
+title: >-
+  KMCS v1.0.0: Software underlying the publication “Morphology Evolution
+  during Lithium-Based Vertically Aligned Nanocomposite Growth”
 type: software
 version: 1.0.0
 date-released: 2026-08-28
+doi: "10.4121/a4fe04ef-aa27-42b7-9f84-81e8313903d8.v1"
 authors:
   - family-names: Cunha
     given-names: Daniel Monteiro
@@ -18,6 +21,7 @@ authors:
     given-names: Bouwe
     affiliation: University of Twente
 repository-code: "https://github.com/Dbuns/KMCS"
+repository-artifact: "https://doi.org/10.4121/a4fe04ef-aa27-42b7-9f84-81e8313903d8.v1"
 url: "https://github.com/Dbuns/KMCS"
 license: Apache-2.0
 abstract: >-
