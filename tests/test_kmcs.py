@@ -17,7 +17,7 @@ EXAMPLE_SNAPSHOT = REPOSITORY_ROOT / "examples" / "snapshot_final.npz"
 
 class KMCSSmokeTests(unittest.TestCase):
     def test_version_and_random_generator_are_explicit(self):
-        self.assertEqual(KMCS.__version__, "1.0.0")
+        self.assertRegex(KMCS.__version__, r"^\d+\.\d+\.\d+(?:\.dev\d+)?$")
         first = KMCS.make_rng(42)
         second = KMCS.make_rng(42)
         self.assertIsInstance(first.bit_generator, np.random.PCG64)

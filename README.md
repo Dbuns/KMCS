@@ -1,5 +1,12 @@
 # KMCS - Kinetic Monte Carlo Simulation of Multi-Material Thin-Film Growth
 
+> Local development version (`1.1.0.dev0`): audited hopping, timing and cache
+> corrections are under scientific revalidation. The DOI below cites the
+> archived v1.0.0 release, not this development branch. Historical figures and
+> the embedded DOE table have not been regenerated with the corrected engine.
+> See [validation/README.md](validation/README.md) before using this branch for
+> scientific comparisons.
+
 [![DOI](https://img.shields.io/badge/DOI-10.4121%2Fa4fe04ef--aa27--42b7--9f84--81e8313903d8.v1-blue)](https://doi.org/10.4121/a4fe04ef-aa27-42b7-9f84-81e8313903d8.v1)
 
 KMCS is a lattice-based kinetic Monte Carlo model for simulating pulsed thin-film growth, with a particular focus on vertically aligned nanocomposites (VANs). The model can also be used to study the growth of individual materials.
@@ -96,7 +103,7 @@ install `requirements-tested.txt` instead.
 
 ## Quick start
 
-The main simulation settings are collected in [`default_run_config()`](KMCS.py#L1818-L1852) near the bottom of `KMCS.py`.
+The main simulation settings are collected in [`default_run_config()`](KMCS.py) near the bottom of `KMCS.py`.
 
 For a first run, keep:
 
@@ -120,7 +127,7 @@ A full scientific-scale simulation can require substantial computation time. For
 
 ## Configuring a simulation
 
-The main settings begin in the [configuration block](KMCS.py#L1818-L1852):
+The main settings begin in the [configuration block](KMCS.py), inside `default_run_config()`:
 
 ```python
 "RUN_TYPE": "single",
@@ -131,7 +138,7 @@ The main settings begin in the [configuration block](KMCS.py#L1818-L1852):
 "W": 1,
 ```
 
-The deposition schedule is defined by [`DEP`](KMCS.py#L1838):
+The deposition schedule is defined by `DEP` in that configuration block:
 
 ```python
 "DEP": np.array([
@@ -152,7 +159,7 @@ Additional materials can be introduced by adding more `species, ratio` pairs and
 
 ## Interaction-energy matrix
 
-The material-pair energies are defined by [`E_vals`](KMCS.py#L1840-L1844):
+The material-pair energies are defined by `E_vals` in the same block:
 
 ```python
 "E_vals": np.array([
@@ -363,6 +370,12 @@ Material 4 is included only as a demonstration of the extended multi-material fu
 Results should therefore be interpreted as model predictions under a defined set of assumptions and parameters.
 
 ## Testing
+
+`tests/test_kmc_regressions.py` additionally checks the audited hopping rules,
+pulse deadlines, cache consistency, species conservation, overflow handling,
+input validation and repeatable small multilayer runs. These software checks
+do not establish paper-scale morphology agreement; that comparison is tracked
+in [validation/README.md](validation/README.md).
 
 `tests/test_kmcs.py` is a small safety check for the software. It runs in a few
 seconds and does not perform or validate a full scientific simulation. It

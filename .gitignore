@@ -9,7 +9,10 @@ __pycache__/
 
 # Virtual environments
 venv/
+.venv/
 .env/
+.env
+.env.*
 
 # Simulation outputs
 frames/

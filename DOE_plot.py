@@ -105,13 +105,6 @@ grid_A = doe_matrix(X1.ravel(), X2.ravel())
 Z = (grid_A @ coeffs).reshape(F.shape)
 
 
-def predict_density(frequency_values, temperature_values):
-    frequency_values = np.asarray(frequency_values)
-    temperature_values = np.asarray(temperature_values)
-    x1_values = 2 * (frequency_values - freq_min) / (freq_max - freq_min) - 1
-    x2_values = 2 * (temperature_values - temp_min) / (temp_max - temp_min) - 1
-    return doe_matrix(x1_values, x2_values) @ coeffs
-
 fitted_density = A @ coeffs
 ss_res = np.sum((density - fitted_density) ** 2)
 ss_tot = np.sum((density - density.mean()) ** 2)

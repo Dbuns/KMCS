@@ -120,7 +120,7 @@ from PIL import Image
 import csv
 import platform
 
-__version__ = "1.0.0"
+__version__ = "1.1.0.dev0"
 RNG_ALGORITHM = "PCG64"
 
 # ============================================================
@@ -633,13 +633,14 @@ def run_dep_plus_relax(Occ, H, DEP, E_vals, rng, plot_every=5, max_events_per_pu
             pulse_index = validation_counters["pulses_completed"] + 1
             xs, ys, ss, H_before = deposit_pulse(Occ, H, species_ids, ratios, flux, rng)
             if xs is None:
+                pulse_time = 1.0 / f
                 validation_counters["hops_per_pulse"].append(0)
                 validation_counters["pulses_completed"] += 1
                 append_roughness_row(
                     roughness_csv_path, H,
                     pulse_index=pulse_index,
                     progress_percent=100.0,
-                    sim_time=0.0,
+                    sim_time=pulse_time,
                     event_count=0,
                     roughness_tracker=roughness_tracker,
                 )
@@ -678,7 +679,7 @@ def run_dep_plus_relax(Occ, H, DEP, E_vals, rng, plot_every=5, max_events_per_pu
                 elif end_reason == "max_events":
                     validation_counters["pulses_ended_by_max_events"] += 1
 
-            if total_pulses > 1:
+            if total_pulses > 1 or (total_pulses == 1 and xs is None):
                 completed_pulses = validation_counters["pulses_completed"]
                 for snapshot_name, frac in snapshot_plan.get(completed_pulses, []):
                     pct = int(round(frac * 100))
@@ -869,7 +870,6 @@ def build_hop_geometry(Occ, y, x, z):
 
     return HopGeometry(
         source_vic=source_vic,
-        dest_occ=dest_occ,
         cubic_neighbor_sites=cubic_neighbor_sites,
         axis2_occupied=axis2_occupied,
         move_sites=move_sites,
@@ -1134,7 +1134,6 @@ class HopGeometry:
     """Lightweight per-hop cache for source-local mapped geometry."""
     __slots__ = (
         "source_vic",
-        "dest_occ",
         "cubic_neighbor_sites",
         "axis2_occupied",
         "move_sites",
@@ -1145,7 +1144,6 @@ class HopGeometry:
     def __init__(
         self,
         source_vic,
-        dest_occ,
         cubic_neighbor_sites,
         axis2_occupied,
         move_sites,
@@ -1153,7 +1151,6 @@ class HopGeometry:
         allowed_moves,
     ):
         self.source_vic = source_vic
-        self.dest_occ = dest_occ
         self.cubic_neighbor_sites = cubic_neighbor_sites
         self.axis2_occupied = axis2_occupied
         self.move_sites = move_sites
@@ -1529,14 +1526,13 @@ def relax_after_pulse_step3a(Occ, H, E_vals, active, T, rng, pulse_interval,
         else:
             affected = ()
         for j in affected:
-            old_rate = rates[j]
             new_hop_geometry = build_hop_geometry(Occ, active[j, 0], active[j, 1], active[j, 2])
             hop_geometries[j] = new_hop_geometry
             new_rate = compute_rate_for_active(
                 Occ, E_vals, active, j, T, active_sites=active_sites, hop_geometry=new_hop_geometry
             )
             rates[j] = new_rate
-            total_rate += new_rate - old_rate
+        total_rate = rates.sum()
 
         progress = min(1.0, t / pulse_interval) if pulse_interval > 0 else 1.0
         event_progress = min(1.0, event_count / max_events) if max_events > 0 else 1.0
@@ -1749,8 +1745,41 @@ def make_rng(seed):
     return np.random.Generator(np.random.PCG64(int(seed)))
 
 
+def validate_run_inputs(config, DEP_run):
+    """Reject malformed inputs before allocating state or creating output folders."""
+    integers = {name: config[name] for name in
+                ("Lx", "Ly", "Lz", "W", "seed", "max_events_per_pulse", "plot_every")}
+    for name, value in integers.items():
+        if not np.isfinite(value) or value != int(value):
+            raise ValueError(f"{name} must be a finite integer")
+    if min(integers[name] for name in ("Lx", "Ly", "Lz", "max_events_per_pulse")) <= 0:
+        raise ValueError("Grid dimensions and max_events_per_pulse must be positive")
+    if integers["seed"] < 0 or integers["plot_every"] < 0:
+        raise ValueError("seed and plot_every must be nonnegative")
+    if not 0 <= integers["W"] <= integers["Ly"]:
+        raise ValueError("W must lie between 0 and Ly")
+    if integers["Lz"] < integers["W"] + 2:
+        raise ValueError("Lz must be at least W + 2")
+    if DEP_run.ndim != 2 or DEP_run.shape[0] == 0:
+        raise ValueError("DEP must be a nonempty two-dimensional matrix")
+    energy = np.asarray(config["E_vals"], dtype=float)
+    if (energy.ndim != 2 or energy.shape[0] == 0
+            or energy.shape[0] != energy.shape[1] or not np.all(np.isfinite(energy))):
+        raise ValueError("E_vals must be a nonempty square matrix of finite energies")
+    for row in DEP_run:
+        _, _, _, _, species, _ = parse_dep_row(row)
+        if species and max(species) > energy.shape[0]:
+            raise ValueError("E_vals must include every deposited species ID")
+    build_progress_save_plan(float(config["roughness_save_every_percent"]))
+    if config["save_debug_frames"] and (
+            not np.isfinite(config["debug_fps"]) or config["debug_fps"] <= 0):
+        raise ValueError("debug_fps must be positive when debug frames are enabled")
+
+
 def run_kmcs_case(config, DEP_run, run_label=None, run_note=None, case_metadata=None):
     """Run one KMCS case using the supplied DEP matrix."""
+    DEP_run = np.array(DEP_run, dtype=float, copy=True)
+    validate_run_inputs(config, DEP_run)
     seed = int(config["seed"])
     rng = make_rng(seed)
     Lx, Ly, Lz = int(config["Lx"]), int(config["Ly"]), int(config["Lz"])
@@ -1874,7 +1903,11 @@ def run_kmcs_case(config, DEP_run, run_label=None, run_note=None, case_metadata=
         "average_hops_per_pulse": validation_counters.get("average_hops_per_pulse", 0.0),
         "final_mean_height": float(final_mean_height),
         "final_roughness": float(final_roughness),
+        "relaxation_complete": validation_counters["pulses_ended_by_max_events"] == 0,
     }
+    if not run_params["summary"]["relaxation_complete"]:
+        print("WARNING: One or more pulses hit the event cap. This run is incomplete; "
+              "do not use it for scientific validation. Increase max_events_per_pulse.")
     save_run_info(run_dir, run_params)
     if gif_path is not None:
         print(f"Saved debug GIF to {gif_path}")
@@ -1891,6 +1924,7 @@ def run_kmcs_case(config, DEP_run, run_label=None, run_note=None, case_metadata=
 def run_single_kmcs(config, run_label=None):
     """Run one KMCS case using DEP exactly as defined in the config."""
     DEP_run = np.array(config["DEP"], dtype=float, copy=True)
+    validate_run_inputs(config, DEP_run)
     T_kelvin = float(DEP_run[0, 0])
     frequency_hz = float(DEP_run[0, 1])
     T_celsius = T_kelvin - 273.15
