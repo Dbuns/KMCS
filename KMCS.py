@@ -129,7 +129,6 @@ RNG_ALGORITHM = "PCG64"
 
 # --- Physical constants (global, fixed) ---
 kB = 8.617333262e-5      # Boltzmann constant [eV/K]
-h  = 4.135667662e-15     # Planck constant [eV*s]
 k0 = 1e12                # Hop attempt frequency [1/s]
 
 # --- Global energy knobs (system-level, fixed) ---
@@ -247,13 +246,6 @@ def save_run_info(run_dir, params_dict):
 # ------------------------------------------------------------
 # Utility: periodic neighbor indices in x/y
 # ------------------------------------------------------------
-def pbc_neighbors(x: int, y: int, Lx: int, Ly: int):
-    """Return periodic neighbor indices (xm,xp, ym,yp)."""
-    xm = (x - 1) % Lx
-    xp = (x + 1) % Lx
-    ym = (y - 1) % Ly
-    yp = (y + 1) % Ly
-    return xm, xp, ym, yp
 
 
 def map_step_boundary(y, x, z, Ly, Lx, step_w=None):
@@ -356,25 +348,41 @@ def parse_dep_row(dep_row: np.ndarray):
     Returns:
       T, f, pulses, flux, species_ids (tuple), ratios (tuple normalized)
     """
-    if dep_row.shape[0] < 4:
+    dep_row = np.asarray(dep_row, dtype=float)
+    if dep_row.ndim != 1 or dep_row.size < 4:
         raise ValueError("DEP row must have at least 4 entries: [T, f, pulses, ML/pulse, ...]")
+    if not np.all(np.isfinite(dep_row)):
+        raise ValueError("DEP entries must be finite numbers")
+    if (dep_row.size - 4) % 2:
+        raise ValueError("DEP material entries must be complete species/ratio pairs")
 
     T, f, pulses, flux = dep_row[:4]
+    if T <= 0 or f <= 0:
+        raise ValueError("DEP temperature (K) and frequency (Hz) must be positive")
+    if pulses < 0 or pulses != int(pulses):
+        raise ValueError("DEP pulse count must be a nonnegative integer")
+    if flux < 0:
+        raise ValueError("DEP flux must be nonnegative")
 
     pairs = dep_row[4:]
     species = []
     ratios = []
     for j in range(0, len(pairs), 2):
-        if j + 1 >= len(pairs):
-            break
         m = int(pairs[j])
+        if pairs[j] != m or not 0 <= m <= 255:
+            raise ValueError("Species IDs must be integers from 1 to 255, or 0 for padding")
         if m == 0:
+            if np.any(pairs[j:] != 0):
+                raise ValueError("All entries after a species-0 terminator must be zero")
             break
+        if pairs[j + 1] < 0:
+            raise ValueError("Deposition ratios must be nonnegative")
         species.append(m)
         ratios.append(float(pairs[j + 1]))
 
     if len(species) == 0:
-        # Allow “no deposition” layer, but it’s usually a mistake
+        if flux > 0:
+            raise ValueError("A positive-flux layer must specify deposited species")
         species_ids = tuple()
         ratios_norm = tuple()
     else:
@@ -393,14 +401,22 @@ def parse_dep_row(dep_row: np.ndarray):
 
 def deposit_pulse(Occ, H, species_ids, ratios, flux_ML_per_pulse, rng):
     Ly, Lx, Lz = Occ.shape
-    species_ids = np.asarray(species_ids, dtype=np.uint8)
-
-    ratios = np.asarray(ratios, dtype=float)
-    ratios = ratios / ratios.sum()
-
+    if not np.isfinite(flux_ML_per_pulse) or flux_ML_per_pulse < 0:
+        raise ValueError("Deposition flux must be finite and nonnegative")
     Natoms = int(round(flux_ML_per_pulse * Lx * Ly))
     if Natoms <= 0:
-        return None, None, None, None  # nothing deposited
+        return None, None, None, None
+    ids = np.asarray(species_ids, dtype=float)
+    ratios = np.asarray(ratios, dtype=float)
+    if (ids.ndim != 1 or ids.size == 0 or ratios.shape != ids.shape
+            or not np.all(np.isfinite(ids)) or np.any(ids != np.floor(ids))
+            or np.any(ids < 1) or np.any(ids > 255)
+            or not np.all(np.isfinite(ratios)) or np.any(ratios < 0)
+            or ratios.sum() <= 0):
+        raise ValueError("Deposition requires valid species IDs and nonnegative ratios with positive sum")
+    species_ids = np.asarray(species_ids, dtype=np.uint8)
+
+    ratios = ratios / ratios.sum()
 
     H_before = H.copy()
 
@@ -409,10 +425,14 @@ def deposit_pulse(Occ, H, species_ids, ratios, flux_ML_per_pulse, rng):
     chosen = rng.choice(len(species_ids), size=Natoms, p=ratios)
     ss = species_ids[chosen]
 
+    # Check the whole pulse before modifying the lattice: never drop overflow atoms.
+    hits = np.zeros(H.shape, dtype=np.int64)
+    np.add.at(hits, (ys, xs), 1)
+    if np.any(H.astype(np.int64) + hits >= Lz):
+        raise ValueError("Deposition would exceed the lattice height; increase Lz")
+
     for x, y, s in zip(xs, ys, ss):
         z = H[y, x] + 1
-        if z >= Lz:
-            continue
         Occ[y, x, z] = s
         H[y, x] = z
 
@@ -624,7 +644,7 @@ def run_dep_plus_relax(Occ, H, DEP, E_vals, rng, plot_every=5, max_events_per_pu
                     roughness_tracker=roughness_tracker,
                 )
             else:
-                active = build_active_list_from_last_deposit(xs, ys, ss, H_before, H, Occ.shape[2])
+                active = build_active_list_from_last_deposit(xs, ys, ss, H_before, Occ.shape[2])
                 active_sites = build_active_site_set(active, Occ)
 
                 if debug:
@@ -641,7 +661,6 @@ def run_dep_plus_relax(Occ, H, DEP, E_vals, rng, plot_every=5, max_events_per_pu
                     debug_dir=frames_dir,
                     frame_count=frame_count,
                     title_prefix=f"Layer {layer+1}, pulse {p+1}",
-                    debug_fps=debug_fps,
                     validation_counters=validation_counters,
                     active_sites=active_sites,
                     run_dir=run_dir,
@@ -690,11 +709,6 @@ def run_dep_plus_relax(Occ, H, DEP, E_vals, rng, plot_every=5, max_events_per_pu
         return make_debug_gif(frames_dir, run_dir, output_name="debug.gif", fps=debug_fps), validation_counters
     return None, validation_counters
                 
-def column_top_z(Occ, y, x):
-    """Return highest occupied z in column (y,x)."""
-    col = Occ[y, x, :]
-    nz = np.nonzero(col)[0]
-    return int(nz[-1]) if nz.size else 0
 
 def fix_height_if_needed(Occ, H, y, x, z_removed):
     """
@@ -708,7 +722,7 @@ def fix_height_if_needed(Occ, H, y, x, z_removed):
         z -= 1
     H[y, x] = z
 
-def build_active_list_from_last_deposit(xs, ys, ss, H_before, H_after, Lz):
+def build_active_list_from_last_deposit(xs, ys, ss, H_before, Lz):
     """
     Build active list for atoms deposited in this pulse.
     We rely on the same order as deposition: each hit stacks.
@@ -737,21 +751,6 @@ def neighbor_energy_6(Occ, E_vals, y, x, z, Ly, Lx, hop_geometry=None):
 
     if hop_geometry is not None:
         return interaction_energy_from_neighbors(E_vals, s, hop_geometry.source_neighbor_species)
-
-    nbrs = []
-    for dy, dx, dz in ((0, -1, 0), (0, 1, 0), (-1, 0, 0), (1, 0, 0), (0, 0, -1), (0, 0, 1)):
-        site = mapped_neighbor_site(y, x, z, dy, dx, dz, Ly, Lx, Occ.shape[2])
-        nbrs.append(int(Occ[site]) if site is not None else 0)
-    return interaction_energy_from_neighbors(E_vals, s, nbrs)
-
-
-def destination_energy_6(Occ, E_vals, s, y, x, z, Ly, Lx, hop_geometry=None, move_index=None):
-    """
-    Compute the local 6-neighbor interaction energy for species s
-    if it were placed at destination site (y,x,z).
-    """
-    if hop_geometry is not None and move_index is not None:
-        return interaction_energy_from_neighbors(E_vals, s, hop_geometry.destination_neighbor_species[move_index])
 
     nbrs = []
     for dy, dx, dz in ((0, -1, 0), (0, 1, 0), (-1, 0, 0), (1, 0, 0), (0, 0, -1), (0, 0, 1)):
@@ -831,33 +830,6 @@ def pick_index_weighted(rng, w):
     return int(np.searchsorted(np.cumsum(w), r))
 
 
-def occupied_face_neighbors(Occ, y, x, z):
-    """Count occupied 6-connected neighbors around a voxel."""
-    Ly, Lx, Lz = Occ.shape
-
-    count = 0
-    for dy, dx, dz in ((0, -1, 0), (0, 1, 0), (-1, 0, 0), (1, 0, 0), (0, 0, -1), (0, 0, 1)):
-        site = mapped_neighbor_site(y, x, z, dy, dx, dz, Ly, Lx, Lz)
-        if site is not None and Occ[site] != 0:
-            count += 1
-    return count
-
-
-def face_neighbor_sites(y, x, z, Ly, Lx, Lz):
-    """Return valid 6-connected neighbor sites with stepped boundary mapping."""
-    sites = []
-    for dy, dx, dz in ((0, -1, 0), (0, 1, 0), (-1, 0, 0), (1, 0, 0), (0, 0, -1), (0, 0, 1)):
-        site = mapped_neighbor_site(y, x, z, dy, dx, dz, Ly, Lx, Lz)
-        if site is not None:
-            sites.append(site)
-    return sites
-
-
-def destination_supported(Occ, y, x, z):
-    """A hop destination is allowed only if it has at least one face-neighbor."""
-    return occupied_face_neighbors(Occ, y, x, z) > 0
-
-
 def site_occupied(Occ, y, x, z):
     """Return occupancy using the stepped boundary mapping."""
     Ly, Lx, Lz = Occ.shape
@@ -866,23 +838,6 @@ def site_occupied(Occ, y, x, z):
     if z2 < 0 or z2 >= Lz:
         return False
     return Occ[y2, x2, z2] != 0
-
-
-def all_sites_occupied(Occ, sites):
-    return all(site_occupied(Occ, y, x, z) for y, x, z in sites)
-
-
-def local_vic(Occ, y, x, z):
-    """Return the local 3x3x3 neighborhood around (y,x,z) with stepped-boundary mapping."""
-    Ly, Lx, Lz = Occ.shape
-    Vic = np.zeros((3, 3, 3), dtype=np.uint8)
-    for iy, dy in enumerate((-1, 0, 1)):
-        for ix, dx in enumerate((-1, 0, 1)):
-            for iz, dz in enumerate((-1, 0, 1)):
-                site = mapped_neighbor_site(y, x, z, dy, dx, dz, Ly, Lx, Lz)
-                if site is not None:
-                    Vic[iy, ix, iz] = Occ[site]
-    return Vic
 
 
 def build_hop_geometry(Occ, y, x, z):
@@ -907,15 +862,6 @@ def build_hop_geometry(Occ, y, x, z):
     move_sites = tuple(local_sites[idx] for idx in MOVE_SITE_INDICES)
     source_neighbor_species = tuple(local_species[idx] for idx in FACE_OFFSET_INDICES)
 
-    destination_neighbor_species = []
-    for neighbor_indices in MOVE_FACE_INDICES:
-        destination_neighbor_species.append(
-            tuple(
-                0 if idx == CENTER_LOCAL_INDEX else local_species[idx]
-                for idx in neighbor_indices
-            )
-        )
-
     allowed_moves = tuple(
         destination_allowed_by_family(dest_occ, dy, dx, dz)
         for dy, dx, dz in MOVE_DISPLACEMENTS_18
@@ -928,7 +874,6 @@ def build_hop_geometry(Occ, y, x, z):
         axis2_occupied=axis2_occupied,
         move_sites=move_sites,
         source_neighbor_species=source_neighbor_species,
-        destination_neighbor_species=tuple(destination_neighbor_species),
         allowed_moves=allowed_moves,
     )
 
@@ -1111,17 +1056,14 @@ def build_active_index_map(active, Occ):
 
 
 def affected_active_indices(active_index, y, x, z, Ly, Lx, Lz):
-    """Return indices of active atoms within a 3x3x3 neighborhood."""
+    """Return every active source whose cached geometry reads the changed site."""
     indices = set()
-    for dy in (-1, 0, 1):
-        for dx in (-1, 0, 1):
-            for dz in (-1, 0, 1):
-                site = mapped_neighbor_site(y, x, z, dy, dx, dz, Ly, Lx, Lz)
-                if site is None:
-                    continue
-                idx = active_index.get(site)
-                if idx is not None:
-                    indices.add(idx)
+    for dy, dx, dz in HOP_LOCAL_OFFSETS:
+        site = mapped_neighbor_site(y, x, z, -dy, -dx, -dz, Ly, Lx, Lz)
+        if site is not None:
+            idx = active_index.get(site)
+            if idx is not None:
+                indices.add(idx)
     return indices
 
 
@@ -1173,27 +1115,15 @@ AXIS2_OFFSETS = {
     "above": (0, 0, 2),
 }
 
-MOVE_FACE_OFFSETS = {
-    move: tuple((move[0] + dy, move[1] + dx, move[2] + dz) for dy, dx, dz in FACE_OFFSETS_6)
-    for move in MOVE_DISPLACEMENTS_18
-}
-
 _HOP_LOCAL_OFFSETS = set(LOCAL_CUBE_OFFSETS_27)
 _HOP_LOCAL_OFFSETS.update(AXIS2_OFFSETS.values())
-for move in MOVE_DISPLACEMENTS_18:
-    _HOP_LOCAL_OFFSETS.update(MOVE_FACE_OFFSETS[move])
 HOP_LOCAL_OFFSETS = tuple(sorted(_HOP_LOCAL_OFFSETS))
 HOP_LOCAL_INDEX = {offset: idx for idx, offset in enumerate(HOP_LOCAL_OFFSETS)}
 HOP_LOCAL_COUNT = len(HOP_LOCAL_OFFSETS)
-CENTER_LOCAL_INDEX = HOP_LOCAL_INDEX[(0, 0, 0)]
 FACE_OFFSET_INDICES = tuple(HOP_LOCAL_INDEX[offset] for offset in FACE_OFFSETS_6)
 AXIS2_ORDER = ("left", "right", "up", "down", "below", "above")
 AXIS2_OFFSET_INDICES = tuple(HOP_LOCAL_INDEX[AXIS2_OFFSETS[name]] for name in AXIS2_ORDER)
 MOVE_SITE_INDICES = tuple(HOP_LOCAL_INDEX[move] for move in MOVE_DISPLACEMENTS_18)
-MOVE_FACE_INDICES = tuple(
-    tuple(HOP_LOCAL_INDEX[offset] for offset in MOVE_FACE_OFFSETS[move])
-    for move in MOVE_DISPLACEMENTS_18
-)
 LOCAL_CUBE_INDEX_TRIPLES = tuple(
     (dy + 1, dx + 1, dz + 1, HOP_LOCAL_INDEX[(dy, dx, dz)])
     for dy, dx, dz in LOCAL_CUBE_OFFSETS_27
@@ -1209,7 +1139,6 @@ class HopGeometry:
         "axis2_occupied",
         "move_sites",
         "source_neighbor_species",
-        "destination_neighbor_species",
         "allowed_moves",
     )
 
@@ -1221,7 +1150,6 @@ class HopGeometry:
         axis2_occupied,
         move_sites,
         source_neighbor_species,
-        destination_neighbor_species,
         allowed_moves,
     ):
         self.source_vic = source_vic
@@ -1230,12 +1158,11 @@ class HopGeometry:
         self.axis2_occupied = axis2_occupied
         self.move_sites = move_sites
         self.source_neighbor_species = source_neighbor_species
-        self.destination_neighbor_species = destination_neighbor_species
         self.allowed_moves = allowed_moves
 
 
 def move_family(dy, dx, dz):
-    if (dy == 0) and (dx == 0):
+    if abs(dy) + abs(dx) + abs(dz) == 1:
         return "cubic"
     if dz == 0:
         return "diag_inplane"
@@ -1536,49 +1463,10 @@ def try_hop_cubic(Occ, H, E_vals, active, idx, T, rng, validation_counters=None,
     return True
 
 
-def try_hop_surface_only(Occ, H, active, idx, rng):
-    """
-    Move active atom idx to top of a random in-plane neighbor column.
-    No ES, no diagonal, no floater checks yet.
-    """
-    Ly, Lx, Lz = Occ.shape
-    y, x, z, s = active[idx]
-
-    # still present?
-    if Occ[y, x, z] != s:
-        return False
-
-    # choose among 4 in-plane neighbors uniformly
-    # (later we’ll make direction selection energetic)
-    dirs = [(0, -1), (0, 1), (-1, 0), (1, 0)]
-    dy, dx = dirs[rng.integers(0, 4)]
-    y2 = (y + dy) % Ly
-    x2 = (x + dx) % Lx
-
-    z2 = H[y2, x2] + 1
-    if z2 >= Lz:
-        return False
-
-    # perform move
-    Occ[y2, x2, z2] = s
-    Occ[y, x, z] = 0
-
-    # update heights
-    if z2 > H[y2, x2]:
-        H[y2, x2] = z2
-    fix_height_if_needed(Occ, H, y, x, z_removed=z)
-
-    # update active record
-    active[idx, 0] = y2
-    active[idx, 1] = x2
-    active[idx, 2] = z2
-
-    return True
-
 def relax_after_pulse_step3a(Occ, H, E_vals, active, T, rng, pulse_interval,
                               max_events=2000,
                               debug=False, debug_dir=None, frame_count=0,
-                              title_prefix=None, debug_fps=5,
+                              title_prefix=None,
                               validation_counters=None, active_sites=None,
                               run_dir=None, pulse_snapshot_plan=(),
                               pulse_index=1, roughness_csv_path=None,
@@ -1609,6 +1497,7 @@ def relax_after_pulse_step3a(Occ, H, E_vals, active, T, rng, pulse_interval,
     while t < pulse_interval and event_count < max_events:
         if total_rate <= 0:
             end_reason = "no_events"
+            t = pulse_interval
             break
 
         idx = pick_index_weighted(rng, rates)
@@ -1618,6 +1507,10 @@ def relax_after_pulse_step3a(Occ, H, E_vals, active, T, rng, pulse_interval,
 
         u = max(rng.random(), np.finfo(np.float64).tiny)
         dt = -np.log(u) / total_rate
+        if t + dt >= pulse_interval:
+            t = pulse_interval
+            end_reason = "time_limit"
+            break
         t += dt
         event_count += 1
 
@@ -1828,11 +1721,9 @@ def default_run_config():
         "max_events_per_pulse": 100_000_000,
         "debug_fps": 5,
         "enable_profiling": False,
-        "profile_pulses": 10,
         "save_snapshots": True,
         "save_final_state": True,
         "save_debug_frames": False,
-        "enable_plotting": False,
         "roughness_save_every_percent": 100,
         # DEP columns: T_K, f_Hz, pulses, ML_per_pulse, then species_id, ratio pairs.
         "DEP": np.array([[600.0 + 273.15, 2, 50, 1 / 25, 2, 1/3, 3, 2/3]], dtype=float),
@@ -1868,11 +1759,9 @@ def run_kmcs_case(config, DEP_run, run_label=None, run_note=None, case_metadata=
     max_events_per_pulse = int(config["max_events_per_pulse"])
     debug_fps = int(config["debug_fps"])
     enable_profiling = bool(config["enable_profiling"])
-    profile_pulses = int(config["profile_pulses"])
     save_snapshots = bool(config["save_snapshots"])
     save_final_state = bool(config["save_final_state"])
     save_debug_frames = bool(config["save_debug_frames"])
-    enable_plotting = bool(config["enable_plotting"])
     roughness_save_every_percent = float(config["roughness_save_every_percent"])
 
     DEP_run = np.array(DEP_run, dtype=float, copy=True)
@@ -1929,8 +1818,6 @@ def run_kmcs_case(config, DEP_run, run_label=None, run_note=None, case_metadata=
             "snapshots_enabled": save_snapshots,
             "snapshot_fractions": list(snapshot_fractions),
             "profile_enabled": enable_profiling,
-            "profile_pulses": profile_pulses if enable_profiling else None,
-            "plotting_enabled": enable_plotting,
             "save_final_state": save_final_state,
             "roughness_save_every_percent": roughness_save_every_percent,
             **case_metadata,

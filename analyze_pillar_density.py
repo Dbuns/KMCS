@@ -12,7 +12,7 @@ import re
 import sys
 from collections import deque
 from pathlib import Path
-from typing import Deque, Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 from matplotlib import colors
@@ -224,7 +224,7 @@ def label_components_numpy(mask: np.ndarray, connectivity: int) -> Tuple[np.ndar
 
             current_label += 1
             labels[y, x] = current_label
-            queue = deque([(y, x)])  # type: Deque[Tuple[int, int]]
+            queue = deque([(y, x)])
 
             while queue:
                 cy, cx = queue.popleft()

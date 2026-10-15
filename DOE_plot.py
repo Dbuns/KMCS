@@ -126,16 +126,6 @@ print(f"R^2 = {r_squared:.4f}")
 # OVAT slices to show beside the response surface
 ovat_temperature = 800
 ovat_frequency = 20
-freq_slice = freq_grid
-temp_slice = temp_grid
-freq_slice_fit = predict_density(
-    freq_slice,
-    np.full_like(freq_slice, ovat_temperature),
-)
-temp_slice_fit = predict_density(
-    np.full_like(temp_slice, ovat_frequency),
-    temp_slice,
-)
 freq_slice_data = df[df["temperature"] == ovat_temperature].sort_values("frequency")
 temp_slice_data = df[df["frequency"] == ovat_frequency].sort_values("temperature")
 
