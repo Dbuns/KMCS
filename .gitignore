@@ -17,6 +17,8 @@ venv/
 # Simulation outputs
 frames/
 runs/
+workpc_results/
+workpc_smoke_results/
 *.png
 *.gif
 *.mp4
