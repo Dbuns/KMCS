@@ -1,4 +1,4 @@
-"""Regression checks for audited KMC behavior, not paper-level validation."""
+"""Regression tests for hopping, timing and state consistency."""
 import os
 os.environ.setdefault("MPLBACKEND", "Agg")
 import unittest
