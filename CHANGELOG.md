@@ -4,8 +4,7 @@ All notable changes to KMCS will be documented in this file.
 
 ## [Unreleased] - 1.1.0.dev0
 
-Corrected development version. Full-size temperature/frequency trend checks
-passed on 21 October 2026; v1.0.0 remains the archived reference release.
+Updates following v1.0.0, which remains the archived reference release.
 
 ### Changed
 
@@ -16,31 +15,23 @@ passed on 21 October 2026; v1.0.0 remains the archived reference release.
 - Added validation of deposition schedules, species IDs, energy-matrix shape,
   grid settings and output intervals before a run creates output files.
 - Updated ignore rules for local virtual environments and environment files.
+- Updated the two-material example and DOE figure.
 
 ### Fixed
 
 - Classify all six face-neighbor directions as cubic hops.
 - Do not apply a hop whose sampled event time reaches or exceeds the next pulse.
 - Refresh cached geometry/rates for all actual local dependencies, including
-  occupancy two sites away, and resummate total rates after updates.
+  occupancy two sites away, and recalculate the total hopping rate after updates.
 - Reject a pulse that would overflow the lattice before changing any occupancy.
 - Advance no-event intervals to their pulse deadline; save snapshots for a
   single zero-flux pulse.
 
-### Verification
+### Tests
 
-- Added focused regressions for hopping directions, Arrhenius constants,
-  deadline handling, cache/full-recompute equivalence, species conservation,
+- Added regression tests for hopping directions, Arrhenius constants,
+  pulse timing, rate updates, species conservation,
   height consistency, overflow and invalid inputs.
-- Tests and small runs are not a replacement for the full paper comparison.
-  See `validation/README.md` for the scientific acceptance procedure.
-- Completed all 25 full-size DOE conditions (128×128×35, 300 pulses, seed 42)
-  without event caps. Final mass, heights, top species and density counts were
-  independently checked. All ten filtered grid sweeps follow the expected
-  direction; unfiltered counts preserve the directions with one plateau.
-- Updated two-material examples and the DOE surface from the new runs,
-  preserving the existing presentation, with compact numerical data and a figure
-  reproduction script. No material energies were fitted to the references.
 
 ## [1.0.0] - 2026-08-28
 

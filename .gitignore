@@ -19,6 +19,12 @@ frames/
 runs/
 workpc_results/
 workpc_smoke_results/
+
+# Local-only working tools
+/workpc/
+/validation/
+/tests/test_workpc.py
+
 *.png
 *.gif
 *.mp4
