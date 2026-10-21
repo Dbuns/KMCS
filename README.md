@@ -1,5 +1,10 @@
 # KMCS - Kinetic Monte Carlo Simulation of Multi-Material Thin-Film Growth
 
+> **Version note:** The current code (`1.1.0.dev0`) includes fixes to hopping,
+> pulse timing and cached rate updates, and has passed the full-size
+> temperature/frequency trend check. The DOI below refers to the archived
+> **v1.0.0 release on 4TU.ResearchData**, not this updated code.
+
 [![DOI](https://img.shields.io/badge/DOI-10.4121%2Fa4fe04ef--aa27--42b7--9f84--81e8313903d8.v1-blue)](https://doi.org/10.4121/a4fe04ef-aa27-42b7-9f84-81e8313903d8.v1)
 
 KMCS is a lattice-based kinetic Monte Carlo model for simulating pulsed thin-film growth, with a particular focus on vertically aligned nanocomposites (VANs). The model can also be used to study the growth of individual materials.
