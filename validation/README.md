@@ -15,8 +15,8 @@ of every 3D feature. The paper's 8 Hz point is kept distinct from the grid's
 10 Hz point.
 
 Compact checked data: `full_size_doe_2026-10-21.json`. Reproduce the updated
-figures with `python validation/generate_full_size_figures.py`. The current
-top-view montage additionally requires the original 25 saved snapshots. The
+DOE and two-material example figures with
+`python validation/generate_full_size_figures.py`. The current
 example NPZ is the corrected 900 °C / 2 Hz run; archived v1.0.0 examples remain
 available in Git history and the DOI deposit. The fixed `DOE_plot.py` table and
 the single-/three-material illustrations remain historical references.

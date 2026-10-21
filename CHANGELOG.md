@@ -38,8 +38,8 @@ passed on 21 October 2026; v1.0.0 remains the archived reference release.
   without event caps. Final mass, heights, top species and density counts were
   independently checked. All ten filtered grid sweeps follow the expected
   direction; unfiltered counts preserve the directions with one plateau.
-- Updated two-material examples, DOE surface, reference trends and top-view
-  montage from the corrected runs, with compact numerical data and a figure
+- Updated two-material examples and the DOE surface from the new runs,
+  preserving the existing presentation, with compact numerical data and a figure
   reproduction script. No material energies were fitted to the references.
 
 ## [1.0.0] - 2026-08-28
