@@ -1,14 +1,36 @@
 # Comparison with the published model
 
-Status: **reduced-size mean trend-direction screening passed** for the corrected
+Status: **full-size temperature/frequency trend check passed** on 21 October
+2026 for the corrected `1.1.0.dev0` simulator. All 25 built-in DOE conditions
+(700–900 °C; 0.5/2/10/20/50 Hz) completed on a 128×128×35 lattice with 300
+pulses and seed 42, without event-cap truncation. Final mass, heights, top
+species and feature counts were independently checked from the saved states.
+All five temperature cuts decrease and all five frequency cuts increase using
+the predefined species-2, 8-connected, minimum-three-pixel analysis. Without
+the area filter, the directions persist, with a tie at 900 °C between 0.5 and
+2 Hz. At 20 Hz, density drops 85.9% from 700 to 900 °C; at 800 °C, it rises
+9.71× from 0.5 to 50 Hz. No energies were retuned. This is a qualitative trend
+check with one seed, not statistical equivalence or independent verification
+of every 3D feature. The paper's 8 Hz point is kept distinct from the grid's
+10 Hz point.
+
+Compact checked data: `full_size_doe_2026-10-21.json`. Reproduce the updated
+figures with `python validation/generate_full_size_figures.py`. The current
+top-view montage additionally requires the original 25 saved snapshots. The
+example NPZ is the corrected 900 °C / 2 Hz run; archived v1.0.0 examples remain
+available in Git history and the DOI deposit. The fixed `DOE_plot.py` table and
+the single-/three-material illustrations remain historical references.
+
+## Earlier reduced-size screening
+
+The **reduced-size mean trend-direction screening passed** for the corrected
 `1.1.0.dev0` simulator. The previous public Python version (`c1b0590`) is the
 comparison baseline; reproducing the original MATLAB implementation is not
 required for this comparison. Software tests pass independently of scientific
 acceptance. All 30 matched cases completed without event-cap truncation.
-This supports the intended directions of the mean temperature and frequency
-response; it is not full-size VAN morphology validation. Historical figures, example NPZ
-and the fixed table in `DOE_plot.py` represent earlier runs and must not be
-presented as output of this corrected version.
+This earlier screen supported the intended directions of the mean temperature
+and frequency response before the full-size check above. It is not by itself
+full-size VAN morphology validation.
 
 Reference: Cunha et al., *Morphology Evolution during Lithium-Based Vertically
 Aligned Nanocomposite Growth*, https://doi.org/10.1021/acsami.9b15025.
@@ -109,7 +131,7 @@ about 100 minutes. Those results are not combined with the completed small-grid
 screen. Larger grids, longer growth and fresh sub-10-Hz conditions remain
 appropriate follow-up checks on the faster machine.
 
-## Scientific comparison to run
+## Scientific comparison protocol
 
 Use the Table 1 energies above without fitting them to the desired outcome.
 Use 128×128 lateral grids and 300 pulses for the morphology comparison in

@@ -1,11 +1,11 @@
 # KMCS - Kinetic Monte Carlo Simulation of Multi-Material Thin-Film Growth
 
-> Local development version (`1.1.0.dev0`): audited hopping, timing and cache
-> corrections are under scientific revalidation. The DOI below cites the
-> archived v1.0.0 release, not this development branch. Historical figures and
-> the embedded DOE table have not been regenerated with the corrected engine.
-> See [validation/README.md](validation/README.md) before using this branch for
-> scientific comparisons.
+> Current code (`1.1.0.dev0`): hopping, timing and cache corrections have passed
+> the full-size temperature/frequency trend check (25 conditions, 128×128×35
+> cells, 300 pulses, seed 42). The DOI below cites archived v1.0.0, not these
+> corrections. Updated two-material and validation figures use the new runs;
+> the single- and three-material illustrations and the fixed `DOE_plot.py`
+> table remain historical. See [validation/README.md](validation/README.md).
 
 [![DOI](https://img.shields.io/badge/DOI-10.4121%2Fa4fe04ef--aa27--42b7--9f84--81e8313903d8.v1-blue)](https://doi.org/10.4121/a4fe04ef-aa27-42b7-9f84-81e8313903d8.v1)
 
@@ -207,8 +207,8 @@ Each condition receives its own run folder, and a summary is written to:
 runs/doe_summary.csv
 ```
 
-The repository also includes `DOE_plot.py`, the script used for the specific
-temperature-frequency dataset presented here. Its density table is written
+The repository also includes `DOE_plot.py`, the script used for the historical
+temperature-frequency dataset. Its density table is written
 directly into the script. It combines the data used to check the trends from
 the paper with the expanded DOE analysis and fits the quadratic response
 surface:
@@ -229,6 +229,11 @@ Unlike `analyze_npz_3d.py` and `analyze_pillar_density.py`, `DOE_plot.py` does
 not automatically read arbitrary KMCS output. Its embedded table can be edited
 for another dataset, but it is included primarily to document and reproduce
 this particular analysis rather than as a general-purpose analysis tool.
+
+The updated DOE, reference-trend and example figures can be reproduced with
+`python validation/generate_full_size_figures.py`, using the checked results in
+`validation/full_size_doe_2026-10-21.json` and the included example snapshot.
+The top-view montage uses the 25 original saved states from the full-size run.
 
 The OVAT slices provide a direct comparison with the temperature and deposition-frequency trends investigated in the original publication. The DOE surface extends that analysis by showing the combined response across the parameter space.
 
@@ -315,6 +320,10 @@ This creates a combined CSV suitable for DOE analysis.
 
 The repository includes a small saved simulation state in `examples/`, allowing the visualization and analysis tools to be tested without first running a full KMC simulation.
 
+The two-material snapshot and 3D view below come from the corrected full-size
+run at 900 °C and 2 Hz. The single- and three-material images are retained as
+illustrations from the earlier implementation, not new validation runs.
+
 ### Single-material growth
 
 <img src="figures/snapshot_single.png" alt="Single-material growth" width="500">
@@ -348,6 +357,10 @@ Temperature and deposition-frequency sweeps were used to validate the model agai
 The Python implementation reproduces these behaviors under the corresponding model parameters.
 
 <img src="figures/number_density.png" alt="Published trends and DOE extension" width="500">
+
+<img src="figures/reference_trends.png" alt="Corrected full-size temperature and frequency trends compared with the experimental and historical reference curves" width="750">
+
+<img src="figures/doe_topviews.png" alt="Final top views from all 25 corrected-code DOE conditions" width="750">
 
 The original paper used one-variable-at-a-time comparisons to explain the experimental trends. The DOE implementation included here expands the analysis by resolving temperature and frequency simultaneously and fitting a continuous response surface to the simulated pillar-density results.
 

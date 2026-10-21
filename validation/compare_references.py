@@ -50,7 +50,7 @@ def make_topview_comparisons(rows, manifest, out):
                  and float(r["T_C"]) == 900. and float(r["f_Hz"]) == 20.)
             for version in ["previous", "corrected"]]
     fig, axes = plt.subplots(1, 3, figsize=(12, 4.5))
-    plot_topview(axes[0], example, "Archived repository example\n900 °C, 2 Hz | 128×128 | 300 pulses")
+    plot_topview(axes[0], example, "Current corrected repository example\n900 °C, 2 Hz | 128×128 | 300 pulses")
     for ax, row, label in zip(axes[1:], pair, ["Published Python screen", "Corrected Python screen"]):
         plot_topview(ax, row["snapshot"],
                      f"{label}\n900 °C, 20 Hz | {row['grid']}×{row['grid']} | {row['pulses']} pulses")

@@ -4,8 +4,8 @@ All notable changes to KMCS will be documented in this file.
 
 ## [Unreleased] - 1.1.0.dev0
 
-Local development version. Scientific comparison with the published model is
-pending; v1.0.0 remains the archived reference release.
+Corrected development version. Full-size temperature/frequency trend checks
+passed on 21 October 2026; v1.0.0 remains the archived reference release.
 
 ### Changed
 
@@ -34,6 +34,13 @@ pending; v1.0.0 remains the archived reference release.
   height consistency, overflow and invalid inputs.
 - Tests and small runs are not a replacement for the full paper comparison.
   See `validation/README.md` for the scientific acceptance procedure.
+- Completed all 25 full-size DOE conditions (128×128×35, 300 pulses, seed 42)
+  without event caps. Final mass, heights, top species and density counts were
+  independently checked. All ten filtered grid sweeps follow the expected
+  direction; unfiltered counts preserve the directions with one plateau.
+- Updated two-material examples, DOE surface, reference trends and top-view
+  montage from the corrected runs, with compact numerical data and a figure
+  reproduction script. No material energies were fitted to the references.
 
 ## [1.0.0] - 2026-08-28
 
